@@ -216,7 +216,7 @@ function addOptionsGrid() {
 async function callOpenAI(userMessage) {
     addMessage("Thinking...", 'bot');
     try {
-const res = await fetch('http://localhost:3000/chat', {
+const res = await fetch('/chat', {   // relative path
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userMessage })
