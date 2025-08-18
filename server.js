@@ -1,26 +1,24 @@
-// server.js
 import express from "express";
 import cors from "cors";
 import fetch from "node-fetch";
 import dotenv from "dotenv";
 import path from "path";
-import { fileURLToPath } from "url";
 
 dotenv.config();
-
 const app = express();
-
-// Needed for __dirname in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Serve static frontend files from the public folder
-app.use(express.static(path.join(__dirname, "public")));
 
 app.use(cors());
 app.use(express.json());
 
-// Chat endpoint
+// Serve the frontend from the public folder
+const __dirname = path.resolve();
+app.use(express.static(path.join(__dirname, "public")));
+
+// Serve index.html for the root
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
 app.post("/chat", async (req, res) => {
   try {
     const { userMessage } = req.body;
@@ -63,11 +61,6 @@ app.post("/chat", async (req, res) => {
     console.error(error);
     res.status(500).json({ error: "Error fetching from OpenAI" });
   }
-});
-
-// Fallback to index.html for any unknown route
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 const PORT = process.env.PORT || 3000;
