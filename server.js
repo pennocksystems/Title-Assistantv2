@@ -1,24 +1,25 @@
+// server.js
 import express from "express";
 import cors from "cors";
 import fetch from "node-fetch";
 import dotenv from "dotenv";
 import path from "path";
+import { fileURLToPath } from "url";
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// Serve the frontend from the public folder
-const __dirname = path.resolve();
+// Serve static frontend files from 'public'
 app.use(express.static(path.join(__dirname, "public")));
 
-// Serve index.html for the root
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-
+// OpenAI chat endpoint
 app.post("/chat", async (req, res) => {
   try {
     const { userMessage } = req.body;
@@ -27,7 +28,7 @@ app.post("/chat", async (req, res) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
         model: "gpt-4o-mini",
@@ -41,11 +42,11 @@ app.post("/chat", async (req, res) => {
               Only answer questions within your knowledge base unless instructed otherwise.
               Respond in a helpful, concise manner.
               Do not fabricate information.
-            `
+            `,
           },
-          { role: "user", content: userMessage }
-        ]
-      })
+          { role: "user", content: userMessage },
+        ],
+      }),
     });
 
     const data = await response.json();
@@ -56,11 +57,15 @@ app.post("/chat", async (req, res) => {
       console.error("Unexpected response from OpenAI:", data);
       res.status(500).json({ error: "Invalid response from OpenAI" });
     }
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error fetching from OpenAI" });
   }
+});
+
+// Catch-all to serve index.html for frontend routing
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 const PORT = process.env.PORT || 3000;
