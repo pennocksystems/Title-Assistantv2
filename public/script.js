@@ -11,7 +11,39 @@ const questions = [
 let answers = {};
 let currentQuestionIndex = 0;
 let saidNiceToMeetYou = false;
-let aiMode = false; // Track if user is chatting with AI
+let aiMode = false;
+
+// 🆕 FORM LIBRARY (add more as needed)
+const formLibrary = {
+    "mvt-5-13": {
+        label: "MVT‑5‑13 Form (Alabama)",
+        path: "/forms/mvt-5-13.pdf"
+    },
+    "mvt-41-1": {
+        label: "MVT‑41‑1 Form (Alabama)",
+        path: "/forms/mvt-41-1.pdf"
+    },
+    "mvt-12-1": {
+        label: "MVT‑12‑1 Form (Alabama)",
+        path: "/forms/mvt-12-1.pdf"
+    }
+};
+
+// 🆕 FUNCTION: Check for form mentions
+function checkForFormDownload(message) {
+    const msg = message.toLowerCase().replace(/\s|_/g, '-');
+    for (const [formId, meta] of Object.entries(formLibrary)) {
+        if (msg.includes(formId)) {
+            return `
+                📥 You can download the <strong>${meta.label}</strong> below:<br><br>
+                <a href="${meta.path}" download style="color: #3b82f6; text-decoration: underline;">
+                  📄 Download ${meta.label}
+                </a>
+            `;
+        }
+    }
+    return null;
+}
 
 const optionResponses = {
     "Remedies": `
@@ -96,25 +128,30 @@ const optionResponses = {
     `
 };
 
-// Greeting
+// Greet user
 addMessage(
     "Hey there! I'm <strong>Title Tom</strong>. I'm here to guide you through the title transfer process and provide you with the necessary forms and information. Let's start by having you answer some questions about yourself...",
     'bot'
 );
-
-setTimeout(() => {
-    addMessage(questions[currentQuestionIndex], 'bot');
-}, 2000);
+setTimeout(() => addMessage(questions[currentQuestionIndex], 'bot'), 2000);
 
 sendBtn.addEventListener('click', handleUserResponse);
 
 function handleUserResponse() {
     let userText = chatInput.value.trim();
+    if (!userText) return;
+
     if (aiMode) {
-        if (!userText) return;
         addMessage(userText, 'user');
-        chatInput.value = ''; // clear input after user sends in AI mode
-        callOpenAI(userText);
+        chatInput.value = '';
+
+        // 🆕 Check for form download first
+        const formResponse = checkForFormDownload(userText);
+        if (formResponse) {
+            addMessage(formResponse, 'bot', true); // isHTML = true
+        } else {
+            callOpenAI(userText);
+        }
         return;
     }
 
@@ -124,6 +161,7 @@ function handleUserResponse() {
             alert('Please select a state before continuing.');
             return;
         }
+
         const stateName = stateSelect.options[stateSelect.selectedIndex].text;
         answers['state'] = stateSelect.value;
         stateSelect.parentNode.remove();
@@ -134,18 +172,15 @@ function handleUserResponse() {
         }, 1000);
 
         currentQuestionIndex++;
-        chatInput.value = ''; // clear input here too just in case
+        chatInput.value = '';
         return;
     }
 
-    if (!userText) return;
     addMessage(userText, 'user');
-
     const keys = ['name', 'phone', 'state'];
     answers[keys[currentQuestionIndex]] = userText;
     currentQuestionIndex++;
-
-    chatInput.value = ''; // <-- Clear input here after user sends message
+    chatInput.value = '';
 
     if (currentQuestionIndex < questions.length) {
         if (questions[currentQuestionIndex].toLowerCase().includes('state')) {
@@ -212,15 +247,15 @@ function addOptionsGrid() {
     }, 50);
 }
 
-// Backend OpenAI call
+// OpenAI fallback
 async function callOpenAI(userMessage) {
     addMessage("Thinking...", 'bot');
     try {
-const res = await fetch('/chat', {   // relative path
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userMessage })
-});
+        const res = await fetch('/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userMessage })
+        });
         const data = await res.json();
         chatBody.lastChild.remove();
         addMessage(data.reply || "Sorry, I couldn't get a response.", 'bot');
