@@ -130,10 +130,10 @@ const optionResponses = {
 
 // Greet user
 addMessage(
-    "Hey there! I'm <strong>Title Tom</strong>. I'm here to guide you through the title transfer process and provide you with the necessary forms and information. Let's start by having you answer some questions about yourself...",
+    "Hey there! I'm <strong>Title Tom</strong>. I'm here to help you navigate the confusing world of titles. Are you looking for general title information/instructions, or do you have a vehicle title issue with one of our services like SHiFT, Car Donation Wizard, or You Call We Haul?",
     'bot'
 );
-setTimeout(() => addMessage(questions[currentQuestionIndex], 'bot'), 2000);
+setTimeout(() => addIntroOptions(), 2000);
 
 sendBtn.addEventListener('click', handleUserResponse);
 
@@ -199,6 +199,71 @@ function getPersonalizedMessage(text) {
     return text;
 }
 
+function addIntroOptions() {
+    const introHTML = `
+        <div class="intro-options">
+            <button class="intro-btn" data-type="general">📘 General Title Help</button>
+            <button class="intro-btn" data-type="issue">🚨 Problem with Vehicle Service Title Issue</button>
+        </div>
+    `;
+    addMessage(introHTML, 'bot', true);
+
+    setTimeout(() => {
+        document.querySelectorAll('.intro-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const choice = btn.getAttribute('data-type');
+                addMessage(btn.textContent, 'user');
+                handleIntroSelection(choice);
+            });
+        });
+    }, 100);
+}
+
+function handleIntroSelection(choice) {
+    if (choice === 'general') {
+        // Jump straight to state selection
+        currentQuestionIndex = 2;
+        addMessage(`Great! Let's figure out your state of residence to get started.`, 'bot');
+        setTimeout(() => addStateDropdown(), 1000);
+    } else if (choice === 'issue') {
+        addMessage(`Got it! I can help you with title issues related to services like SHiFT, Car Donation Wizard, or You Call We Haul. For more in-depth assistance, can we get some information from you to see if you have a previous vehicle on file with us? You can skip this for now if you would like.`, 'bot');
+        setTimeout(() => addRecordCheckOptions(), 1000);  // ⬅️ New flow
+    }
+}
+
+function addRecordCheckOptions() {
+    const recordCheckHTML = `
+        <div class="intro-options">
+            <button class="intro-btn" data-record="check">📋 Record Check</button>
+            <button class="intro-btn" data-record="skip">⏭️ Skip For Now</button>
+        </div>
+    `;
+    addMessage(recordCheckHTML, 'bot', true);
+
+    setTimeout(() => {
+        document.querySelectorAll('.intro-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const choice = btn.getAttribute('data-record');
+                addMessage(btn.textContent, 'user');
+                handleRecordCheckSelection(choice);
+            });
+        });
+    }, 100);
+}
+
+function handleRecordCheckSelection(choice) {
+    if (choice === 'check') {
+        // You can customize this logic later
+        addMessage(`Let’s begin the record check. Please provide any reference number or name on the account.`, 'bot');
+        // Optional: You can toggle aiMode = true if you want it handled by OpenAI
+    } else if (choice === 'skip') {
+        // Skip straight to state selection
+        currentQuestionIndex = 2;
+        addMessage(`No problem! Let's figure out your state of residence.`, 'bot');
+        setTimeout(() => addStateDropdown(), 1000);
+    }
+}
+
 function addMessage(text, sender, isHTML = false) {
     const div = document.createElement('div');
     div.classList.add(sender === 'bot' ? 'bot-message' : 'user-message');
@@ -210,7 +275,7 @@ function addMessage(text, sender, isHTML = false) {
 
 function addStateDropdown() {
     addMessage(`
-        <label class="dropdown-label">Awesome! Next, please select your state of residence:</label>
+        <label class="dropdown-label">Please select your state of residence:</label>
         <select id="state-select" class="dropdown-select">
             <option value="">--Select State--</option>
             <option value="AL">Alabama</option>
