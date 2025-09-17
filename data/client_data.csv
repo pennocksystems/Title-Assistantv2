@@ -1,4 +1,14 @@
-client first name,client last name,client email,client phone,vehicle year,vehicle make,vehicle model,city,state,zip-code,internal title status
-Jane,Doe,jane.doe@example.com,3125557890,2020,Toyota,Corolla,Chicago,IL,60607,Pending
-John,Smith,john.smith@example.com,7731234567,2019,Honda,Civic,Evanston,IL,60201,Complete
+client first name,client last name,client email,client phone,vehicle year,vehicle make,vehicle model,city,state,zip-code,internal title status,title remedy
+Emma,Johnson,emma.johnson@example.com,2055551234,2018,Hyundai,Elantra,Birmingham,AL,35203,Expired Title,Complete and submit MVT‑12‑1 Application for Replacement Title with fee.
+Liam,Williams,liam.williams@example.com,3345555678,2020,Toyota,Camry,Montgomery,AL,36104,Missing Documentation,Submit a copy of government-issued ID and proof of ownership (bill of sale or lien release).
+Olivia,Brown,olivia.brown@example.com,2515557890,2017,Honda,Accord,Mobile,AL,36602,Rejected – Out-of-State Title,Submit an MVT‑5‑13 form to verify VIN and initiate Alabama title process.
+Noah,Jones,noah.jones@example.com,2565554321,2019,Ford,Escape,Huntsville,AL,35801,Pending Transfer – Missing Signatures,Obtain seller’s signature on the assignment of title and resubmit MVT‑41‑1.
+Ava,Miller,ava.miller@example.com,9385556789,2021,Nissan,Rogue,Florence,AL,35630,Expired Title,Resubmit MVT‑12‑1 form with payment; ensure vehicle is properly registered.
+William,Davis,william.davis@example.com,2055553456,2022,Chevrolet,Malibu,Tuscaloosa,AL,35401,Incorrect Owner Name on Title,Provide notarized affidavit with correct name and copy of photo ID.
+Sophia,Wilson,sophia.wilson@example.com,3345559876,2023,Kia,Sportage,Auburn,AL,36830,Rejected – VIN Mismatch,Schedule VIN inspection with local DMV and submit MVT‑5‑13 with correct VIN.
+James,Moore,james.moore@example.com,2515556543,2016,Dodge,Charger,Gulf Shores,AL,36542,Pending Review – Supporting Docs Needed,Upload lien release document and valid proof of residence to complete application.
+Isabella,Taylor,isabella.taylor@example.com,9385557890,2020,Jeep,Grand Cherokee,Decatur,AL,35601,Title Lien Not Cleared,Contact lienholder for release letter and submit to Alabama Title Division.
+Benjamin,Anderson,benjamin.anderson@example.com,2565553210,2015,Subaru,Outback,Anniston,AL,36201,Awaiting Title Fee Payment,Pay outstanding $18 title fee via check or money order to AL Department of Revenue.
+
+
 

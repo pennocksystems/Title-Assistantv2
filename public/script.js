@@ -35,68 +35,110 @@ const formLibrary = {
 // --- Chat Handler ---
 sendBtn.addEventListener('click', handleUserResponse);
 
-// --- Intro Greeting ---
-addMessage(
-    "Hey there! I'm <strong>Title Tom</strong>. I'm here to help you navigate the confusing world of titles. Are you looking for general title information/instructions, or do you have a vehicle title issue with one of our services like SHiFT, Car Donation Wizard, or You Call We Haul?",
-    'bot'
-);
-setTimeout(() => addIntroOptions(), 2000);
+addMessage("Hey there! I'm <strong>Title Tom</strong>.", 'bot', true);
+
+setTimeout(() => {
+    addMessage("I'm here to help you navigate the confusing world of titles.", 'bot', true);
+}, 1200);
+
+setTimeout(() => {
+    addMessage("Are you looking for general title information/instructions, or do you have a vehicle title issue with one of our services like SHiFT, Car Donation Wizard, or You Call We Haul?", 'bot', true);
+}, 2500);
+
+setTimeout(() => {
+    addIntroOptions();
+}, 4000);
 
 // --- Handle User Response ---
 function handleUserResponse() {
     const userText = chatInput.value.trim();
     if (!userText) return;
 
-    // If in Record Check Mode
-    if (recordCheckMode) {
-        recordCheckMode = false;
-        addMessage(userText, 'user');
-        chatInput.value = '';
+// If in Record Check Mode
+if (recordCheckMode) {
+    recordCheckMode = false;
+    addMessage(userText, 'user');
+    chatInput.value = '';
 
-        // Validate email
-        if (!userText.includes('@')) {
-            addMessage("⚠️ Please enter a valid email address.", 'bot');
-            return;
-        }
-
-        fetch('/check-client', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: userText })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.match) {
-                const c = data.data;
-                const info = `
-                    ✅ Here's what we found on file:<br><br>
-                    <ul>
-                      <li><strong>Name:</strong> ${c["client first name"]} ${c["client last name"]}</li>
-                      <li><strong>Email:</strong> ${c["client email"]}</li>
-                      <li><strong>Phone:</strong> ${c["client phone"]}</li>
-                      <li><strong>Vehicle:</strong> ${c["vehicle year"]} ${c["vehicle make"]} ${c["vehicle model"]}</li>
-                      <li><strong>City/State/ZIP:</strong> ${c["city"]}, ${c["state"]} ${c["zip-code"]}</li>
-                      <li><strong>Title Status:</strong> ${c["internal title status"]}</li>
-                    </ul>
-                    Let me know what you'd like help with regarding this vehicle.
-                `;
-                addMessage(info, 'bot', true);
-            } else {
-                addMessage("❌ No record found for that email. No worries — let's continue manually.", 'bot');
-            }
-
-            currentQuestionIndex = 2;
-            setTimeout(() => addStateDropdown(), 1000);
-        })
-        .catch(err => {
-            console.error("Lookup failed:", err);
-            addMessage("⚠️ Something went wrong while checking your record.", 'bot');
-            currentQuestionIndex = 2;
-            setTimeout(() => addStateDropdown(), 1000);
-        });
-
+    // Validate email
+    if (!userText.includes('@')) {
+        addMessage("⚠️ Please enter a valid email address.", 'bot');
         return;
     }
+
+    fetch('/check-client', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userText })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.match) {
+            const c = data.data;
+            const summary = `✅ It looks like your <strong>${c["vehicle year"]} ${c["vehicle make"]} ${c["vehicle model"]}</strong> is registered in <strong>${c["state"]}</strong>. Is this still accurate?`;
+            addMessage(summary, 'bot', true);
+
+            const confirmBtns = `
+                <div class="intro-options" style="display: flex; justify-content: center; gap: 12px;">
+                    <button class="intro-btn" data-confirm="yes">✅ Yes, that's correct</button>
+                    <button class="intro-btn" data-confirm="no">❌ No, that's outdated</button>
+                </div>
+            `;
+            addMessage(confirmBtns, 'bot', true);
+
+            setTimeout(() => {
+                document.querySelectorAll('[data-confirm]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        addMessage(btn.textContent, 'user');
+                        const choice = btn.getAttribute('data-confirm');
+                        if (choice === 'yes') {
+                            answers['state'] = c["state"];
+                            const stateName = c["state"];
+                            setTimeout(() => {
+addMessage(`Awesome. I'll use your state of <strong>${stateName}</strong> to pull relevant info.`, 'bot', true);
+
+setTimeout(() => {
+    addMessage(`Based on our records regarding your profile, your current title status shows <strong>${c["internal title status"]}</strong>.`, 'bot', true);
+}, 800);
+
+setTimeout(() => {
+    const remedy = c["title remedy"];
+    if (remedy) {
+        addMessage(`🛠️ To address this, here's what I recommend: <strong>${remedy}</strong>`, 'bot', true);
+    } else {
+        addMessage("Given the issue with your title, my suggestion to remedy this would be...", 'bot');
+    }
+
+    // Then show options
+    setTimeout(() => addOptionsGrid(), 800);
+}, 1600);
+
+
+                            }, 600);
+                        } else {
+                            currentQuestionIndex = 2;
+                            setTimeout(() => addMessage("No problem! Let's figure out your state of residence.", 'bot'), 600);
+                            setTimeout(() => addStateDropdown(), 1200);
+                        }
+                    });
+                });
+            }, 100);
+
+        } else {
+            addMessage("❌ No record found for that email. No worries — let's continue manually.", 'bot');
+            currentQuestionIndex = 2;
+            setTimeout(() => addStateDropdown(), 1000);
+        }
+    })
+    .catch(err => {
+        console.error("Lookup failed:", err);
+        addMessage("⚠️ Something went wrong while checking your record.", 'bot');
+        currentQuestionIndex = 2;
+        setTimeout(() => addStateDropdown(), 1000);
+    });
+
+    return;
+}
 
     // AI mode
     if (aiMode) {
