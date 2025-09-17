@@ -1,0 +1,4 @@
+client first name,client last name,client email,client phone,vehicle year,vehicle make,vehicle model,city,state,zip-code,internal title status
+Jane,Doe,jane.doe@example.com,3125557890,2020,Toyota,Corolla,Chicago,IL,60607,Pending
+John,Smith,john.smith@example.com,7731234567,2019,Honda,Civic,Evanston,IL,60201,Complete
+

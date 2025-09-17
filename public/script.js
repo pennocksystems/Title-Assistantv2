@@ -1,7 +1,9 @@
+// --- DOM Elements ---
 const chatBody = document.getElementById('chat-body');
 const chatInput = document.getElementById('chat-input');
 const sendBtn = document.getElementById('send-btn');
 
+// --- State ---
 const questions = [
     "What's your Name?",
     "What's your Phone Number?",
@@ -12,8 +14,9 @@ let answers = {};
 let currentQuestionIndex = 0;
 let saidNiceToMeetYou = false;
 let aiMode = false;
+let recordCheckMode = false;
 
-// 🆕 FORM LIBRARY (add more as needed)
+// --- Form Library ---
 const formLibrary = {
     "mvt-5-13": {
         label: "MVT‑5‑13 Form (Alabama)",
@@ -29,156 +32,109 @@ const formLibrary = {
     }
 };
 
-// 🆕 FUNCTION: Check for form mentions
-function checkForFormDownload(message) {
-    const msg = message.toLowerCase().replace(/\s|_/g, '-');
-    for (const [formId, meta] of Object.entries(formLibrary)) {
-        if (msg.includes(formId)) {
-            return `
-                📥 You can download the <strong>${meta.label}</strong> below:<br><br>
-                <a href="${meta.path}" download style="color: #3b82f6; text-decoration: underline;">
-                  📄 Download ${meta.label}
-                </a>
-            `;
-        }
-    }
-    return null;
-}
+// --- Chat Handler ---
+sendBtn.addEventListener('click', handleUserResponse);
 
-const optionResponses = {
-    "Remedies": `
-        Let's take a look at some <strong>title remedies</strong> within Alabama.<br>
-        Here are some things you can ask me about:
-        <ul>
-            <li>Power of Attorney (POA)</li>
-            <li>Affidavit of Correction (AOC)</li>
-            <li>Lien Releases</li>
-            <li>Title in the Name of a Business or Trust</li>
-            <li>What to do if the Owner of the Vehicle is Deceased</li>
-        </ul>
-    `,
-    "Boats & Alternative Vehicles": `
-        Alabama has different title processes for boats, trailers, ATVs, and other non-standard vehicles:
-        Check out some important specifications for different title processes:
-        <ul>
-            <li>Boats: No Title Needed - REQUIRED: Bill of Sale & Copy of Registration</li>
-            <li>Motorhome/RVs: Title <em>is required</em> UNLESS it's twenty (20) years older than the Bill of Sale.</li>
-            <li>Trailers: Travel Trailers & Folding/Collapsible Camping Trailers less than twenty (20) years old REQUIRE a Title.</li>
-        </ul>
-        Here are some other questions you can ask me...
-        <ul>
-            <li>If my boat or RV doesn't have a title, how can I obtain one?</li>
-            <li>What fees are involved in transferring a boat or an RV title?</li>
-            <li>Do I need a hull identification number (HIN) to title my boat?</li>
-        </ul>
-    `,
-    "Applying for Salvage/Nonrepairable Titles": `
-        Interested in applying for a <em>salvage</em> or <em>nonrepairable</em> title?<br>
-        Let's take a look at some of the necessities:
-        <ul>
-            <li>Vehicles <strong>35 years or older</strong> are EXEMPT</li>
-            <li>There is a $15 application fee</li>
-            <li>The average turnaround time is between 2-4 weeks</li>
-            <li>The <strong>Replacement Title Application</strong> (MVT-41-1) needs to be completed</li>
-        </ul>
-        Here are some things I can help you with...
-        <ul>
-            <li>Ask me to help you download the MVT-41-1 form</li>
-            <li>Ask me what the difference is between a salvage title and a nonrepairable title</li>
-            <li>Ask me if it's legal to sell a vehicle with a salvage title</li>
-        </ul>
-    `,
-    "Applying for Duplicate Titles": `
-        Need information when it comes to applying for a <em>duplicate</em> title?<br>
-        Here's some important information for you:
-        <ul>
-            <li>You must complete the <strong>Replacement Title Application</strong> (MVT-12-1)</li>
-            <li>There is a $15 application fee</li>
-            <li>The average turnaround time is between 2-4 weeks</li>
-        </ul>
-        If you are looking to obtain a duplicate title <strong>on behalf of the owner</strong>...
-        <ul>
-            <li>You must provide two (2) notarized, Alabama specific POAs signed by <em>all</em> owners</li>
-            <li>If the vehicle is <strong>older than 12 years</strong> AND the lien is <strong>older than 4 years</strong>, then <em>no lien release is required</em></li>
-        </ul>
-        Here are some additional questions you can ask me...
-        <ul>
-            <li>Can you provide me with the MVT-12-1 paperwork?</li>
-            <li>Can you provide me with the MVT-5-13 paperwork?</li>
-            <li>Can I legally transfer ownership with a duplicate title?</li>
-        </ul>
-    `,
-    "Alternate Method to Sell Vehicle(s)": `
-        Have some questions regarding alternate methods to sell a vehicle?<br>
-        Try asking me about things like:
-        <ul>
-            <li>How does vehicle abandonment relate to selling a vehicle?</li>
-            <li>What is Alabama's specific legal process when it comes to abandoned vehicles?</li>
-            <li>What are some additional, legal ways to sell my vehicle(s)?</li>
-        </ul>
-    `,
-    "General Information": `
-        Want to ask me some more broad based questions regarding the title process in Alabama?<br>
-        Try asking me about things like:
-        <ul>
-            <li>How old does my vehicle have to be in order to be exempt from title processes?</li>
-            <li>Does mileage play a factor when it comes to title transfer?</li>
-            <li>What do I do with my license plates after I transfer the title?</li>
-        </ul>
-    `
-};
-
-// Greet user
+// --- Intro Greeting ---
 addMessage(
     "Hey there! I'm <strong>Title Tom</strong>. I'm here to help you navigate the confusing world of titles. Are you looking for general title information/instructions, or do you have a vehicle title issue with one of our services like SHiFT, Car Donation Wizard, or You Call We Haul?",
     'bot'
 );
 setTimeout(() => addIntroOptions(), 2000);
 
-sendBtn.addEventListener('click', handleUserResponse);
-
+// --- Handle User Response ---
 function handleUserResponse() {
-    let userText = chatInput.value.trim();
+    const userText = chatInput.value.trim();
     if (!userText) return;
 
-    if (aiMode) {
+    // If in Record Check Mode
+    if (recordCheckMode) {
+        recordCheckMode = false;
         addMessage(userText, 'user');
         chatInput.value = '';
 
-        // 🆕 Check for form download first
+        // Validate email
+        if (!userText.includes('@')) {
+            addMessage("⚠️ Please enter a valid email address.", 'bot');
+            return;
+        }
+
+        fetch('/check-client', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: userText })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.match) {
+                const c = data.data;
+                const info = `
+                    ✅ Here's what we found on file:<br><br>
+                    <ul>
+                      <li><strong>Name:</strong> ${c["client first name"]} ${c["client last name"]}</li>
+                      <li><strong>Email:</strong> ${c["client email"]}</li>
+                      <li><strong>Phone:</strong> ${c["client phone"]}</li>
+                      <li><strong>Vehicle:</strong> ${c["vehicle year"]} ${c["vehicle make"]} ${c["vehicle model"]}</li>
+                      <li><strong>City/State/ZIP:</strong> ${c["city"]}, ${c["state"]} ${c["zip-code"]}</li>
+                      <li><strong>Title Status:</strong> ${c["internal title status"]}</li>
+                    </ul>
+                    Let me know what you'd like help with regarding this vehicle.
+                `;
+                addMessage(info, 'bot', true);
+            } else {
+                addMessage("❌ No record found for that email. No worries — let's continue manually.", 'bot');
+            }
+
+            currentQuestionIndex = 2;
+            setTimeout(() => addStateDropdown(), 1000);
+        })
+        .catch(err => {
+            console.error("Lookup failed:", err);
+            addMessage("⚠️ Something went wrong while checking your record.", 'bot');
+            currentQuestionIndex = 2;
+            setTimeout(() => addStateDropdown(), 1000);
+        });
+
+        return;
+    }
+
+    // AI mode
+    if (aiMode) {
+        addMessage(userText, 'user');
+        chatInput.value = '';
         const formResponse = checkForFormDownload(userText);
         if (formResponse) {
-            addMessage(formResponse, 'bot', true); // isHTML = true
+            addMessage(formResponse, 'bot', true);
         } else {
             callOpenAI(userText);
         }
         return;
     }
 
+    // State selection step
     if (currentQuestionIndex === 2) {
         const stateSelect = document.getElementById('state-select');
         if (!stateSelect || !stateSelect.value) {
             alert('Please select a state before continuing.');
             return;
         }
-
         const stateName = stateSelect.options[stateSelect.selectedIndex].text;
         answers['state'] = stateSelect.value;
         stateSelect.parentNode.remove();
-
         setTimeout(() => {
-            addMessage(`Perfect. I'll pull all the information I can regarding <strong>${stateName} Title Information</strong>. Here are some of the routes we can take to get you the information you need:`, 'bot');
+            addMessage(`Perfect. I'll pull all the information I can regarding <strong>${stateName} Title Information</strong>. Here are some of the routes we can take:`, 'bot');
             setTimeout(() => addOptionsGrid(), 800);
         }, 1000);
-
         currentQuestionIndex++;
         chatInput.value = '';
         return;
     }
 
-    addMessage(userText, 'user');
+    // Default flow
+    const userTextTrimmed = userText.trim();
+    addMessage(userTextTrimmed, 'user');
     const keys = ['name', 'phone', 'state'];
-    answers[keys[currentQuestionIndex]] = userText;
+    answers[keys[currentQuestionIndex]] = userTextTrimmed;
     currentQuestionIndex++;
     chatInput.value = '';
 
@@ -191,23 +147,15 @@ function handleUserResponse() {
     }
 }
 
-function getPersonalizedMessage(text) {
-    if (!saidNiceToMeetYou && answers.name) {
-        saidNiceToMeetYou = true;
-        return `Nice to meet you, ${answers.name}. ${text}`;
-    }
-    return text;
-}
-
+// --- Intro Options ---
 function addIntroOptions() {
     const introHTML = `
-        <div class="intro-options">
+        <div class="intro-options" style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
             <button class="intro-btn" data-type="general">📘 General Title Help</button>
             <button class="intro-btn" data-type="issue">🚨 Problem with Vehicle Service Title Issue</button>
         </div>
     `;
     addMessage(introHTML, 'bot', true);
-
     setTimeout(() => {
         document.querySelectorAll('.intro-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -221,25 +169,23 @@ function addIntroOptions() {
 
 function handleIntroSelection(choice) {
     if (choice === 'general') {
-        // Jump straight to state selection
         currentQuestionIndex = 2;
-        addMessage(`Great! Let's figure out your state of residence to get started.`, 'bot');
+        addMessage("Great! Let's figure out your state of residence to get started.", 'bot');
         setTimeout(() => addStateDropdown(), 1000);
     } else if (choice === 'issue') {
-        addMessage(`Got it! I can help you with title issues related to services like SHiFT, Car Donation Wizard, or You Call We Haul. For more in-depth assistance, can we get some information from you to see if you have a previous vehicle on file with us? You can skip this for now if you would like.`, 'bot');
-        setTimeout(() => addRecordCheckOptions(), 1000);  // ⬅️ New flow
+        addMessage("Got it! Before we dive in, would you like me to check if we already have a record of your vehicle?", 'bot');
+        setTimeout(() => addRecordCheckOptions(), 1000);
     }
 }
 
 function addRecordCheckOptions() {
-    const recordCheckHTML = `
-        <div class="intro-options">
+    const html = `
+        <div class="intro-options" style="display: flex; justify-content: center; gap: 12px;">
             <button class="intro-btn" data-record="check">📋 Record Check</button>
             <button class="intro-btn" data-record="skip">⏭️ Skip For Now</button>
         </div>
     `;
-    addMessage(recordCheckHTML, 'bot', true);
-
+    addMessage(html, 'bot', true);
     setTimeout(() => {
         document.querySelectorAll('.intro-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -253,22 +199,27 @@ function addRecordCheckOptions() {
 
 function handleRecordCheckSelection(choice) {
     if (choice === 'check') {
-        // You can customize this logic later
-        addMessage(`Let’s begin the record check. Please provide any reference number or name on the account.`, 'bot');
-        // Optional: You can toggle aiMode = true if you want it handled by OpenAI
+        recordCheckMode = true;
+        addMessage("Please enter your email address so I can check for a record on file.", 'bot');
     } else if (choice === 'skip') {
-        // Skip straight to state selection
         currentQuestionIndex = 2;
-        addMessage(`No problem! Let's figure out your state of residence.`, 'bot');
+        addMessage("No problem! Let's figure out your state of residence.", 'bot');
         setTimeout(() => addStateDropdown(), 1000);
     }
+}
+
+function getPersonalizedMessage(text) {
+    if (!saidNiceToMeetYou && answers.name) {
+        saidNiceToMeetYou = true;
+        return `Nice to meet you, ${answers.name}. ${text}`;
+    }
+    return text;
 }
 
 function addMessage(text, sender, isHTML = false) {
     const div = document.createElement('div');
     div.classList.add(sender === 'bot' ? 'bot-message' : 'user-message');
-    if (sender === 'bot' || isHTML) div.innerHTML = text;
-    else div.innerText = text;
+    div[isHTML ? 'innerHTML' : 'innerText'] = text;
     chatBody.appendChild(div);
     chatBody.scrollTop = chatBody.scrollHeight;
 }
@@ -304,7 +255,6 @@ function addOptionsGrid() {
                 }
             });
         });
-
         document.getElementById('ask-ai-btn').addEventListener('click', () => {
             aiMode = true;
             addMessage("Sure! What would you like to ask me about titles?", 'bot');
@@ -312,7 +262,21 @@ function addOptionsGrid() {
     }, 50);
 }
 
-// OpenAI fallback
+function checkForFormDownload(message) {
+    const msg = message.toLowerCase().replace(/\s|_/g, '-');
+    for (const [formId, meta] of Object.entries(formLibrary)) {
+        if (msg.includes(formId)) {
+            return `
+                📥 You can download the <strong>${meta.label}</strong> below:<br><br>
+                <a href="${meta.path}" download style="color: #3b82f6; text-decoration: underline;">
+                  📄 Download ${meta.label}
+                </a>
+            `;
+        }
+    }
+    return null;
+}
+
 async function callOpenAI(userMessage) {
     addMessage("Thinking...", 'bot');
     try {
