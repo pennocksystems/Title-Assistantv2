@@ -32,6 +32,127 @@ const formLibrary = {
     }
 };
 
+// --- Predefined Option Responses ---
+const optionResponses = {
+    "Remedies": `
+        Let's take a look at some <strong>title remedies</strong> within Alabama.<br>
+        Here are some things you can ask me about:
+        <ul>
+            <li>Power of Attorney (POA)</li>
+            <li>Affidavit of Correction (AOC)</li>
+            <li>Lien Releases</li>
+            <li>Title in the Name of a Business or Trust</li>
+            <li>What to do if the Owner of the Vehicle is Deceased</li>
+        </ul>
+    `,
+    "Boats & Alternative Vehicles": `
+        Alabama has different title processes for boats, trailers, ATVs, and other non-standard vehicles:
+        Check out some important specifications for different title processes:
+        <ul>
+            <li>Boats: No Title Needed - REQUIRED: Bill of Sale & Copy of Registration</li>
+            <li>Motorhome/RVs: Title <em>is required</em> UNLESS it's twenty (20) years older than the Bill of Sale.</li>
+            <li>Trailers: Travel Trailers & Folding/Collapsible Camping Trailers less than twenty (20) years old REQUIRE a Title.</li>
+        </ul>
+        Here are some other questions you can ask me...
+        <ul>
+            <li>If my boat or RV doesn't have a title, how can I obtain one?</li>
+            <li>What fees are involved in transferring a boat or an RV title?</li>
+            <li>Do I need a hull identification number (HIN) to title my boat?</li>
+        </ul>
+    `,
+    "Applying for Salvage/Nonrepairable Titles": `
+        Interested in applying for a <em>salvage</em> or <em>nonrepairable</em> title?<br>
+        Let's take a look at some of the necessities:
+        <ul>
+            <li>Vehicles <strong>35 years or older</strong> are EXEMPT</li>
+            <li>There is a $15 application fee</li>
+            <li>The average turnaround time is between 2-4 weeks</li>
+            <li>The <strong>Replacement Title Application</strong> (MVT-41-1) needs to be completed</li>
+        </ul>
+        Here are some things I can help you with...
+        <ul>
+            <li>Ask me to help you download the MVT-41-1 form</li>
+            <li>Ask me what the difference is between a salvage title and a nonrepairable title</li>
+            <li>Ask me if it's legal to sell a vehicle with a salvage title</li>
+        </ul>
+    `,
+    "Applying for Duplicate Titles": `
+        Need information when it comes to applying for a <em>duplicate</em> title?<br>
+        Here's some important information for you:
+        <ul>
+            <li>You must complete the <strong>Replacement Title Application</strong> (MVT-12-1)</li>
+            <li>There is a $15 application fee</li>
+            <li>The average turnaround time is between 2-4 weeks</li>
+        </ul>
+        If you are looking to obtain a duplicate title <strong>on behalf of the owner</strong>...
+        <ul>
+            <li>You must provide two (2) notarized, Alabama specific POAs signed by <em>all</em> owners</li>
+            <li>If the vehicle is <strong>older than 12 years</strong> AND the lien is <strong>older than 4 years</strong>, then <em>no lien release is required</em></li>
+        </ul>
+        Here are some additional questions you can ask me...
+        <ul>
+            <li>Can you provide me with the MVT-12-1 paperwork?</li>
+            <li>Can you provide me with the MVT-5-13 paperwork?</li>
+            <li>Can I legally transfer ownership with a duplicate title?</li>
+        </ul>
+    `,
+    "Alternate Method to Sell Vehicle(s)": `
+        Have some questions regarding alternate methods to sell a vehicle?<br>
+        Try asking me about things like:
+        <ul>
+            <li>How does vehicle abandonment relate to selling a vehicle?</li>
+            <li>What is Alabama's specific legal process when it comes to abandoned vehicles?</li>
+            <li>What are some additional, legal ways to sell my vehicle(s)?</li>
+        </ul>
+    `,
+    "General Information": `
+        Want to ask me some more broad based questions regarding the title process in Alabama?<br>
+        Try asking me about things like:
+        <ul>
+            <li>How old does my vehicle have to be in order to be exempt from title processes?</li>
+            <li>Does mileage play a factor when it comes to title transfer?</li>
+            <li>What do I do with my license plates after I transfer the title?</li>
+        </ul>
+    `
+};
+
+// --- Option Grid Buttons ---
+function addOptionsGrid() {
+    const buttonsHTML = `
+        <div class="options-grid">
+            ${Object.keys(optionResponses).map(option => `
+                <button class="option-btn" data-option="${option}">
+                    ${option}
+                </button>
+            `).join('')}
+        </div>
+        <div class="ai-option">
+            <button id="ask-ai-btn" class="option-btn ai-btn">Ask Me Anything</button>
+        </div>
+    `;
+    addMessage(buttonsHTML, 'bot', true);
+
+    setTimeout(() => {
+        document.querySelectorAll('.option-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const selectedOption = btn.getAttribute('data-option');
+                if (selectedOption) {
+                    addMessage(selectedOption, 'user');
+                    setTimeout(() => {
+                        const response = optionResponses[selectedOption] || "Sorry, I don’t have info on that yet.";
+                        addMessage(response, 'bot', true);
+                    }, 600);
+                }
+            });
+        });
+
+        document.getElementById('ask-ai-btn').addEventListener('click', () => {
+            aiMode = true;
+            addMessage("Sure! What would you like to ask me about titles?", 'bot');
+        });
+    }, 100);
+}
+
 // --- Chat Handler ---
 sendBtn.addEventListener('click', handleUserResponse);
 
