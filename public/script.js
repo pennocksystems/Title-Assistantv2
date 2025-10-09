@@ -292,28 +292,39 @@ function addStateDropdown() {
 }
 
 function addOptionsGrid() {
+    const orderedOptions = [
+        "General Information",
+        "Ask Me Anything",
+        "Boats & Alternative Vehicles",
+        "Applying for Salvage/Nonrepairable Titles",
+        "Applying for Duplicate Titles",
+        "Alternate Method to Sell Vehicle(s)"
+    ];
+
     const buttonsHTML = `
         <div class="options-grid">
-            ${Object.keys(optionResponses).map(option => `<button class="option-btn" data-option="${option}">${option}</button>`).join('')}
-        </div>
-        <div class="ai-option">
-            <button id="ask-ai-btn" class="option-btn ai-btn">Ask Me Anything</button>
+            ${orderedOptions.map(option => {
+                if (option === "Ask Me Anything") {
+                    return `<button class="option-btn ai-btn" data-option="Ask Me Anything">${option}</button>`;
+                }
+                return `<button class="option-btn" data-option="${option}">${option}</button>`;
+            }).join('')}
         </div>`;
+
     addMessage(buttonsHTML, 'bot', true);
 
     setTimeout(() => {
         document.querySelectorAll('.option-btn').forEach(btn => {
+            const selectedOption = btn.getAttribute('data-option');
             btn.addEventListener('click', () => {
-                const selectedOption = btn.getAttribute('data-option');
-                if (selectedOption) {
-                    addMessage(selectedOption, 'user');
+                addMessage(btn.textContent, 'user');
+                if (selectedOption === "Ask Me Anything") {
+                    aiMode = true;
+                    addMessage("Sure! What would you like to ask me about titles?", 'bot');
+                } else {
                     setTimeout(() => addMessage(optionResponses[selectedOption], 'bot'), 600);
                 }
             });
-        });
-        document.getElementById('ask-ai-btn').addEventListener('click', () => {
-            aiMode = true;
-            addMessage("Sure! What would you like to ask me about titles?", 'bot');
         });
     }, 50);
 }
