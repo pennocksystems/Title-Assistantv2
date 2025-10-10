@@ -78,6 +78,19 @@ const optionResponses = {
 
 // --- Chat Start ---
 sendBtn.addEventListener('click', handleUserResponse);
+function showTypingIndicator(callback, delay = 1000) {
+    const typingDiv = document.createElement('div');
+    typingDiv.classList.add('bot-message', 'typing');
+    typingDiv.innerHTML = `<span class="dot"></span><span class="dot"></span><span class="dot"></span>`;
+    chatBody.appendChild(typingDiv);
+    chatBody.scrollTop = chatBody.scrollHeight;
+
+    setTimeout(() => {
+        typingDiv.remove();
+        callback();
+    }, delay);
+}
+
 addMessage("Hey there! I'm <strong>Title Tom</strong>.", 'bot', true);
 setTimeout(() => addMessage("I'm here to help you navigate the confusing world of titles.", 'bot', true), 1200);
 setTimeout(() => addMessage("Are you looking for general title information/instructions, or do you have a vehicle title issue with one of our services like SHiFT, Car Donation Wizard, or You Call We Haul?", 'bot', true), 2500);
@@ -97,42 +110,58 @@ function handleUserResponse() {
             const c = pendingClientData;
             const summary = `✅ It looks like your <strong>${c["vehicle year"]} ${c["vehicle make"]} ${c["vehicle model"]}</strong> is registered in <strong>${c["state"]}</strong>. Is this still accurate?`;
             addMessage(summary, 'bot', true);
+            showConfirmButtons(c);
 
-            const confirmBtns = `
-                <div class="intro-options" style="display: flex; justify-content: center; gap: 12px;">
-                    <button class="intro-btn" data-confirm="yes">✅ Yes, that's correct</button>
-                    <button class="intro-btn" data-confirm="no">❌ No, that's outdated</button>
-                </div>`;
-            addMessage(confirmBtns, 'bot', true);
 
-            setTimeout(() => {
-                document.querySelectorAll('[data-confirm]').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        addMessage(btn.textContent, 'user');
-                        const choice = btn.getAttribute('data-confirm');
-                        if (choice === 'yes') {
-                            const stateName = c["state"];
-                            answers['state'] = c["state"];
+            function showConfirmButtons(clientData) {
+    const html = `
+        <div class="intro-options" style="display: flex; justify-content: center; gap: 12px;">
+            <button class="intro-btn" data-confirm="yes">✅ Yes, that's correct</button>
+            <button class="intro-btn" data-confirm="no">❌ No, that's outdated</button>
+        </div>`;
+    
+    addMessage(html, 'bot', true); // no await needed here since listener is added after callback
+
+
+    // Use a MutationObserver to wait for it to be in DOM
+    const observer = new MutationObserver(() => {
+        const buttons = document.querySelectorAll('[data-confirm]');
+        if (buttons.length) {
+            observer.disconnect(); // stop once found
+
+            buttons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    addMessage(btn.textContent, 'user');
+                    const choice = btn.getAttribute('data-confirm');
+
+                    if (choice === 'yes') {
+                        const stateName = clientData["state"];
+                        answers['state'] = clientData["state"];
+                        setTimeout(() => {
+                            addMessage(`Awesome. I'll use your state of <strong>${stateName}</strong> to pull relevant info.`, 'bot', true);
                             setTimeout(() => {
-                                addMessage(`Awesome. I'll use your state of <strong>${stateName}</strong> to pull relevant info.`, 'bot', true);
-                                setTimeout(() => {
-                                    addMessage(`Based on our records regarding your profile, your current title status shows <strong>${c["internal title status"]}</strong>.`, 'bot', true);
-                                }, 800);
-                                setTimeout(() => {
-                                    if (c["title remedy"]) {
-                                        addMessage(`🛠️ To address this, here's what I recommend: <strong>${c["title remedy"]}</strong>`, 'bot', true);
-                                    }
-                                    setTimeout(() => addOptionsGrid(), 800);
-                                }, 1600);
-                            }, 600);
-                        } else {
-                            currentQuestionIndex = 2;
-                            addMessage("No problem! Let's figure out your state of residence.", 'bot');
-                            setTimeout(() => addStateDropdown(), 1000);
-                        }
-                    });
+                                addMessage(`Based on our records regarding your profile, your current title status shows <strong>${clientData["internal title status"]}</strong>.`, 'bot', true);
+                            }, 800);
+                            setTimeout(() => {
+                                if (clientData["title remedy"]) {
+                                    addMessage(`🛠️ To address this, here's what I recommend: <strong>${clientData["title remedy"]}</strong>`, 'bot', true);
+                                }
+                                setTimeout(() => addOptionsGrid(), 800);
+                            }, 1600);
+                        }, 600);
+                    } else {
+                        currentQuestionIndex = 2;
+                        addMessage("No problem! Let's figure out your state of residence.", 'bot');
+                        setTimeout(() => addStateDropdown(), 1000);
+                    }
                 });
-            }, 200);
+            });
+        }
+    });
+
+    observer.observe(chatBody, { childList: true, subtree: true });
+}
+
         } else {
             addMessage("❌ That code is incorrect. Please try entering the 4-digit code again.", 'bot');
         }
@@ -224,23 +253,24 @@ function handleUserResponse() {
 }
 
 // --- UI Builders ---
-function addIntroOptions() {
+async function addIntroOptions() {
     const html = `
         <div class="intro-options" style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
             <button class="intro-btn" data-type="general">📘 General Title Help</button>
             <button class="intro-btn" data-type="issue">🚨 Problem with Vehicle Service Title Issue</button>
         </div>`;
-    addMessage(html, 'bot', true);
-    setTimeout(() => {
-        document.querySelectorAll('.intro-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const choice = btn.getAttribute('data-type');
-                addMessage(btn.textContent, 'user');
-                handleIntroSelection(choice);
-            });
+
+    await addMessage(html, 'bot', true); // Wait for message to render
+
+    document.querySelectorAll('.intro-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const choice = btn.getAttribute('data-type');
+            addMessage(btn.textContent, 'user');
+            handleIntroSelection(choice);
         });
-    }, 100);
+    });
 }
+
 
 function handleIntroSelection(choice) {
     if (choice === 'general') {
@@ -249,27 +279,28 @@ function handleIntroSelection(choice) {
         setTimeout(() => addStateDropdown(), 1000);
     } else if (choice === 'issue') {
         addMessage("Got it! Before we dive in, would you like me to check if we already have a record of your vehicle?", 'bot');
-        setTimeout(() => addRecordCheckOptions(), 1000);
+        setTimeout(async () => await addRecordCheckOptions(), 1000);
     }
 }
 
-function addRecordCheckOptions() {
+async function addRecordCheckOptions() {
     const html = `
         <div class="intro-options" style="display: flex; justify-content: center; gap: 12px;">
             <button class="intro-btn" data-record="check">📋 Record Check</button>
             <button class="intro-btn" data-record="skip">⏭️ Skip For Now</button>
         </div>`;
-    addMessage(html, 'bot', true);
-    setTimeout(() => {
-        document.querySelectorAll('.intro-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const choice = btn.getAttribute('data-record');
-                addMessage(btn.textContent, 'user');
-                handleRecordCheckSelection(choice);
-            });
+
+    await addMessage(html, 'bot', true); // Wait for typing + DOM update
+
+    document.querySelectorAll('[data-record]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            addMessage(btn.textContent, 'user');
+            const choice = btn.getAttribute('data-record');
+            handleRecordCheckSelection(choice);
         });
-    }, 100);
+    });
 }
+
 
 function handleRecordCheckSelection(choice) {
     if (choice === 'check') {
@@ -291,7 +322,7 @@ function addStateDropdown() {
         </select>`, 'bot', true);
 }
 
-function addOptionsGrid() {
+async function addOptionsGrid() {
     const orderedOptions = [
         "General Information",
         "Ask Me Anything",
@@ -311,31 +342,49 @@ function addOptionsGrid() {
             }).join('')}
         </div>`;
 
-    addMessage(buttonsHTML, 'bot', true);
+    // Show typing dots first, then insert buttons into DOM
+    await addMessage(buttonsHTML, 'bot', true);
 
-    setTimeout(() => {
-        document.querySelectorAll('.option-btn').forEach(btn => {
-            const selectedOption = btn.getAttribute('data-option');
-            btn.addEventListener('click', () => {
-                addMessage(btn.textContent, 'user');
-                if (selectedOption === "Ask Me Anything") {
-                    aiMode = true;
-                    addMessage("Sure! What would you like to ask me about titles?", 'bot');
-                } else {
-                    setTimeout(() => addMessage(optionResponses[selectedOption], 'bot'), 600);
-                }
-            });
+    // Attach event listeners AFTER the buttons are present
+    document.querySelectorAll('.option-btn').forEach(btn => {
+        const selectedOption = btn.getAttribute('data-option');
+        btn.addEventListener('click', () => {
+            addMessage(btn.textContent, 'user');
+
+            if (selectedOption === "Ask Me Anything") {
+    aiMode = true;
+    addMessage("Sure! What would you like to ask me about titles?", 'bot', true);
+} else {
+    setTimeout(() => addMessage(optionResponses[selectedOption], 'bot', true), 600);
+}
+
         });
-    }, 50);
+    });
 }
 
 function addMessage(text, sender, isHTML = false) {
-    const div = document.createElement('div');
-    div.classList.add(sender === 'bot' ? 'bot-message' : 'user-message');
-    div[isHTML ? 'innerHTML' : 'innerText'] = text;
-    chatBody.appendChild(div);
-    chatBody.scrollTop = chatBody.scrollHeight;
+    return new Promise((resolve) => {
+        if (sender === 'bot') {
+            showTypingIndicator(() => {
+                const div = document.createElement('div');
+                div.classList.add('bot-message');
+                div[isHTML ? 'innerHTML' : 'innerText'] = text;
+                chatBody.appendChild(div);
+                chatBody.scrollTop = chatBody.scrollHeight;
+                resolve(); // Let caller know it's safe to bind listeners
+            });
+        } else {
+            const div = document.createElement('div');
+            div.classList.add('user-message');
+            div[isHTML ? 'innerHTML' : 'innerText'] = text;
+            chatBody.appendChild(div);
+            chatBody.scrollTop = chatBody.scrollHeight;
+            resolve();
+        }
+    });
 }
+
+
 
 function getPersonalizedMessage(text) {
     if (!saidNiceToMeetYou && answers.name) {
