@@ -96,6 +96,37 @@ setTimeout(() => addMessage("I'm here to help you navigate the confusing world o
 setTimeout(() => addMessage("Are you looking for general title information/instructions, or do you have a vehicle title issue with one of our services like SHiFT, Car Donation Wizard, or You Call We Haul?", 'bot', true), 2500);
 setTimeout(() => addIntroOptions(), 4000);
 
+// --- State Normalization ---
+const stateMap = {
+    "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas",
+    "CA": "California", "CO": "Colorado", "CT": "Connecticut", "DE": "Delaware",
+    "FL": "Florida", "GA": "Georgia", "HI": "Hawaii", "ID": "Idaho",
+    "IL": "Illinois", "IN": "Indiana", "IA": "Iowa", "KS": "Kansas",
+    "KY": "Kentucky", "LA": "Louisiana", "ME": "Maine", "MD": "Maryland",
+    "MA": "Massachusetts", "MI": "Michigan", "MN": "Minnesota", "MS": "Mississippi",
+    "MO": "Missouri", "MT": "Montana", "NE": "Nebraska", "NV": "Nevada",
+    "NH": "New Hampshire", "NJ": "New Jersey", "NM": "New Mexico", "NY": "New York",
+    "NC": "North Carolina", "ND": "North Dakota", "OH": "Ohio", "OK": "Oklahoma",
+    "OR": "Oregon", "PA": "Pennsylvania", "RI": "Rhode Island", "SC": "South Carolina",
+    "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas", "UT": "Utah",
+    "VT": "Vermont", "VA": "Virginia", "WA": "Washington", "WV": "West Virginia",
+    "WI": "Wisconsin", "WY": "Wyoming"
+};
+
+function normalizeState(input) {
+    if (!input) return '';
+    const cleaned = input.trim().toUpperCase();
+
+    // direct abbreviation
+    if (stateMap[cleaned]) return stateMap[cleaned];
+
+    // try partial or full match (e.g., "calif" → "California")
+    const match = Object.values(stateMap).find(
+        name => name.toUpperCase().startsWith(cleaned)
+    );
+    return match || input.charAt(0).toUpperCase() + input.slice(1).toLowerCase();
+}
+
 // --- User Response Handler ---
 function handleUserResponse() {
     const userText = chatInput.value.trim();
@@ -152,7 +183,7 @@ function handleUserResponse() {
                     } else {
                         currentQuestionIndex = 2;
                         addMessage("No problem! Let's figure out your state of residence.", 'bot');
-                        setTimeout(() => addStateDropdown(), 1000);
+                        setTimeout(() => addStateInput(), 1000);
                     }
                 });
             });
@@ -192,14 +223,14 @@ function handleUserResponse() {
             } else {
                 addMessage("❌ No record found for that email. No worries — let's continue manually.", 'bot');
                 currentQuestionIndex = 2;
-                setTimeout(() => addStateDropdown(), 1000);
+                setTimeout(() => addStateInput(), 1000);
             }
         })
         .catch(err => {
             console.error("Lookup failed:", err);
             addMessage("⚠️ Something went wrong while checking your record.", 'bot');
             currentQuestionIndex = 2;
-            setTimeout(() => addStateDropdown(), 1000);
+            setTimeout(() => addStateInput(), 1000);
         });
         return;
     }
@@ -217,24 +248,29 @@ function handleUserResponse() {
         return;
     }
 
-    // --- State Step ---
     if (currentQuestionIndex === 2) {
-        const stateSelect = document.getElementById('state-select');
-        if (!stateSelect || !stateSelect.value) {
-            alert('Please select a state before continuing.');
-            return;
-        }
-        const stateName = stateSelect.options[stateSelect.selectedIndex].text;
-        answers['state'] = stateSelect.value;
-        stateSelect.parentNode.remove();
-        setTimeout(() => {
-            addMessage(`Perfect. I'll pull all the information I can regarding <strong>${stateName} Title Information</strong>. Here are some of the routes we can take:`, 'bot', true);
-            setTimeout(() => addOptionsGrid(), 800);
-        }, 1000);
-        currentQuestionIndex++;
-        chatInput.value = '';
+    const stateInput = document.getElementById('state-input');
+    const stateName = (stateInput && stateInput.value.trim()) || chatInput.value.trim();
+
+    if (!stateName) {
+        alert('Please enter your state before continuing.');
         return;
     }
+
+    const normalizedState = normalizeState(stateName);
+    answers['state'] = normalizedState;
+    if (stateInput) stateInput.parentNode.remove(); // remove the inline input if it's rendered
+    addMessage(stateName, 'user');
+    chatInput.value = '';
+
+    setTimeout(() => {
+    addMessage(`Perfect. I'll pull all the information I can regarding <strong>${normalizedState} Title Information</strong>. Here are some of the routes we can take:`, 'bot', true);
+        setTimeout(() => addOptionsGrid(), 800);
+    }, 1000);
+    currentQuestionIndex++;
+    return;
+}
+
 
     // --- Default Flow ---
     addMessage(userText, 'user');
@@ -245,7 +281,7 @@ function handleUserResponse() {
 
     if (currentQuestionIndex < questions.length) {
         if (questions[currentQuestionIndex].toLowerCase().includes('state')) {
-            setTimeout(() => addStateDropdown(), 1000);
+            setTimeout(() => addStateInput(), 1000);
         } else {
             setTimeout(() => addMessage(getPersonalizedMessage(questions[currentQuestionIndex]), 'bot'), 1000);
         }
@@ -276,7 +312,7 @@ function handleIntroSelection(choice) {
     if (choice === 'general') {
         currentQuestionIndex = 2;
         addMessage("Great! Let's figure out your state of residence to get started.", 'bot');
-        setTimeout(() => addStateDropdown(), 1000);
+        setTimeout(() => addStateInput(), 1000);
     } else if (choice === 'issue') {
         addMessage("Got it! Before we dive in, would you like me to check if we already have a record of your vehicle?", 'bot');
         setTimeout(async () => await addRecordCheckOptions(), 1000);
@@ -309,17 +345,12 @@ function handleRecordCheckSelection(choice) {
     } else {
         currentQuestionIndex = 2;
         addMessage("No problem! Let's figure out your state of residence.", 'bot');
-        setTimeout(() => addStateDropdown(), 1000);
+        setTimeout(() => addStateInput(), 1000);
     }
 }
 
-function addStateDropdown() {
-    addMessage(`
-        <label class="dropdown-label">Please select your state of residence:</label>
-        <select id="state-select" class="dropdown-select">
-            <option value="">--Select State--</option>
-            <option value="AL">Alabama</option>
-        </select>`, 'bot', true);
+function addStateInput() {
+    addMessage("Please type your state of residence (e.g., Alabama, CA, etc.):", 'bot');
 }
 
 async function addOptionsGrid() {
