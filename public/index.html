@@ -1,23 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Title Assistant</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Title Assistant</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <div class="chat-container">
-        <div class="chat-header">Title Tom - Title Assistant</div>
-        <div class="chat-body" id="chat-body">
-            <!-- Chat messages will go here -->
+  <div class="chat-container">
+    <div class="chat-header">
+      <div class="header-left">
+        <img src="/icons/logo.png" alt="Title Tom avatar" class="bot-avatar" />
+        <div class="header-text">
+          <h1>Title Tom</h1>
+          <p>Your Vehicle Title Assistant</p>
         </div>
-        <div class="chat-footer">
-            <input type="text" id="chat-input" placeholder="Type your answer...">
-            <button id="send-btn">Send</button>
-        </div>
+      </div>
+      <div class="header-right">
+        <span class="status-dot"></span> Online
+        <!-- 🌙 Dark Mode Toggle -->
+        <button id="dark-toggle" title="Toggle Dark Mode">🌙</button>
+      </div>
     </div>
 
-    <script src="script.js"></script>
+    <div class="chat-body" id="chat-body">
+      <!-- Chat messages will go here -->
+    </div>
+
+    <div class="chat-footer">
+      <input type="text" id="chat-input" placeholder="Type your answer..." />
+      <button id="send-btn">Send</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>

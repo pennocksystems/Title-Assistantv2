@@ -451,3 +451,11 @@ async function callOpenAI(userMessage) {
         addMessage("Error contacting AI service.", 'bot');
     }
 }
+
+// === Dark Mode Toggle ===
+const darkToggle = document.getElementById('dark-toggle');
+if (darkToggle) {
+  darkToggle.addEventListener('click', () => {
+    document.body.classList.toggle('dark');
+  });
+}
