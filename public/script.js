@@ -20,10 +20,28 @@ let pendingClientData = null;
 
 // --- Form Library ---
 const formLibrary = {
-    "mvt-5-13": { label: "MVT‑5‑13 Form (Alabama)", path: "/forms/mvt-5-13.pdf" },
-    "mvt-41-1": { label: "MVT‑41‑1 Form (Alabama)", path: "/forms/mvt-41-1.pdf" },
-    "mvt-12-1": { label: "MVT‑12‑1 Form (Alabama)", path: "/forms/mvt-12-1.pdf" }
+  "mvt-5-13": { 
+    label: "MVT-5-13 Form (Alabama)", 
+    path: "https://eforms.com/download/2015/09/Alabama-Motor-Vehicle-Power-of-Attorney-Form-MVT-5-13.pdf" 
+  },
+  "mvt-41-1": { 
+    label: "MVT-41-1 Form (Alabama)", 
+    path: "https://drive.google.com/file/d/1J3jB9wuNE0l4zqxgvIumvRehJmtwF7g8/view" 
+  },
+  "mvt-12-1": { 
+    label: "MVT-12-1 Form (Alabama)", 
+    path: "https://www.formalu.com/forms/506/application-for-replacement-title" 
+  },
+  "mvt-5-7": {
+    label: "MVT-5-7 Form (Alabama)",
+    path: "https://www.revenue.alabama.gov/wp-content/uploads/2021/10/MVT-5-7-8-19.pdf"
+  },
+  "mvt-5-6": {
+    label: "MVT-5-6 Form (Alabama)",
+    path: "https://drive.google.com/file/d/1oWm0T7w9C0UsaNcw5S0nt5pYWzmRBTrW/view"
+  }
 };
+
 
 // --- Option Responses ---
 const optionResponses = {
