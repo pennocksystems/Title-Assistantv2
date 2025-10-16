@@ -42,6 +42,39 @@ const formLibrary = {
   }
 };
 
+function normalizeForMatch(s) {
+  if (!s) return '';
+  return s
+    .toLowerCase()
+    // normalize *all* dash-like characters to a simple hyphen
+    .replace(/[\u2010\u2011\u2012\u2013\u2014\u2015\u2212\uFE58\uFE63\uFF0D\u2043\u002D]/g, '-')
+    .replace(/[\s_]+/g, '-')       // spaces/underscores -> hyphen
+    .replace(/[()]/g, '')          // remove parentheses
+    .replace(/-{2,}/g, '-')        // collapse multiple hyphens
+    .trim();
+}
+
+function getFormsFromText(remedyText, formLibrary) {
+  const normalized = normalizeForMatch(remedyText);
+  const found = [];
+
+  for (const code of Object.keys(formLibrary)) {
+    const codeNorm = normalizeForMatch(code);
+    const codeNoDash = codeNorm.replace(/-/g, '');
+    // match variants like "mvt 513", "mvt_5_13", "mvt-5-13"
+    if (
+      normalized.includes(codeNorm) ||
+      normalized.replace(/-/g, '').includes(codeNoDash) ||
+      normalized.includes(codeNoDash) ||
+      normalized.includes(codeNorm.replace('mvt-', 'mvt'))
+    ) {
+      found.push(code);
+    }
+  }
+
+  return [...new Set(found)];
+}
+
 
 // --- Option Responses ---
 const optionResponses = {
@@ -159,58 +192,187 @@ function handleUserResponse() {
             const c = pendingClientData;
             const summary = `✅ It looks like your <strong>${c["vehicle year"]} ${c["vehicle make"]} ${c["vehicle model"]}</strong> is registered in <strong>${c["state"]}</strong>. Is this still accurate?`;
             addMessage(summary, 'bot', true);
-            showConfirmButtons(c);
+            // 🔔 call the UI to render the confirm buttons
+showConfirmButtons(c);
 
-
-            function showConfirmButtons(clientData) {
-    const html = `
-        <div class="intro-options" style="display: flex; justify-content: center; gap: 12px;">
-            <button class="intro-btn" data-confirm="yes">✅ Yes, that's correct</button>
-            <button class="intro-btn" data-confirm="no">❌ No, that's outdated</button>
-        </div>`;
-    
-    addMessage(html, 'bot', true); // no await needed here since listener is added after callback
-
-
-    // Use a MutationObserver to wait for it to be in DOM
-    const observer = new MutationObserver(() => {
-        const buttons = document.querySelectorAll('[data-confirm]');
-        if (buttons.length) {
-            observer.disconnect(); // stop once found
-
-            buttons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    addMessage(btn.textContent, 'user');
-                    const choice = btn.getAttribute('data-confirm');
-
-                    if (choice === 'yes') {
-                        const stateName = clientData["state"];
-                        answers['state'] = clientData["state"];
-                        setTimeout(() => {
-                            addMessage(`Awesome. I'll use your state of <strong>${stateName}</strong> to pull relevant info.`, 'bot', true);
-                            setTimeout(() => {
-                                addMessage(`Based on our records regarding your profile, your current title status shows <strong>${clientData["internal title status"]}</strong>.`, 'bot', true);
-                            }, 800);
-                            setTimeout(() => {
-                                if (clientData["title remedy"]) {
-                                    addMessage(`🛠️ To address this, here's what I recommend: <strong>${clientData["title remedy"]}</strong>`, 'bot', true);
-                                }
-                                setTimeout(() => addOptionsGrid(), 800);
-                            }, 1600);
-                        }, 600);
-                    } else {
-                        currentQuestionIndex = 2;
-                        addMessage("No problem! Let's figure out your state of residence.", 'bot');
-                        setTimeout(() => addStateInput(), 1000);
-                    }
-                });
-            });
-        }
-    });
-
-    observer.observe(chatBody, { childList: true, subtree: true });
+// ⬇️ STOP keeping logic nested here. Close the current scope if needed.
 }
 
+// ✅ Keep this small: only render the buttons.
+function showConfirmButtons(clientData) {
+  console.log("🟦 showConfirmButtons() called with clientData:", clientData);
+  const html = `
+    <div class="intro-options" style="display: flex; justify-content: center; gap: 12px;">
+      <button class="intro-btn" data-confirm="yes">✅ Yes, that's correct</button>
+      <button class="intro-btn" data-confirm="no">❌ No, that's outdated</button>
+    </div>`;
+  addMessage(html, 'bot', true);
+}
+
+/* ============================================================
+   🔧 GLOBAL HELPERS + EVENT DELEGATION (with DEBUG LOGS)
+   (Do NOT nest these inside another function)
+============================================================ */
+const DEBUG = true;
+const dbg = (...args) => DEBUG && console.log(...args);
+
+// Run the remedy & form-ask flow
+async function runRemedyFlow(clientData) {
+  dbg("🟩 runRemedyFlow() start. clientData:", clientData);
+
+  if (!clientData) {
+    console.warn("⚠️ runRemedyFlow called with null/undefined clientData");
+    setTimeout(() => addOptionsGrid(), 600);
+    return;
+  }
+
+  const remedyText = clientData["title remedy"];
+  dbg("🟩 remedyText:", remedyText);
+
+  if (!remedyText) {
+    await addMessage("I don’t have a specific remedy on file. Let’s continue.", 'bot', true);
+    setTimeout(() => addOptionsGrid(), 600);
+    return;
+  }
+
+  await addMessage(
+    `🛠️ To address this, here's what I recommend: <strong>${remedyText}</strong>`,
+    'bot',
+    true
+  );
+
+  const matchedForms = getFormsFromText(remedyText, formLibrary);
+  dbg("🟩 matchedForms from remedy:", matchedForms);
+
+  if (!Array.isArray(matchedForms) || matchedForms.length === 0) {
+    dbg("🟨 No known forms detected in remedy → proceeding to options");
+    setTimeout(() => addOptionsGrid(), 800);
+    return;
+  }
+
+  // store forms for the delegated yes/no handler
+  window._pendingForms = matchedForms;
+
+  const formList = matchedForms
+    .map(code => {
+      const f = formLibrary[code];
+      return f ? `<li><strong>${f.label}</strong></li>` : "";
+    })
+    .join('');
+
+  await addMessage(
+    `I noticed your remedy mentions the following form(s):<br><ul>${formList}</ul>Would you like me to provide links to these forms?`,
+    'bot',
+    true
+  );
+
+  await addMessage(`
+    <div class="intro-options" style="display:flex;justify-content:center;gap:12px;">
+      <button class="intro-btn" data-formconfirm="yes">✅ Yes</button>
+      <button class="intro-btn" data-formconfirm="no">❌ No</button>
+    </div>`,
+    'bot',
+    true
+  );
+
+  dbg("🟩 Asked user Y/N for forms; awaiting click…");
+}
+
+// Bind once
+if (!window._delegatesBound) {
+  dbg("🟪 Binding delegated click handlers…");
+
+  // 1) Handle state confirm (Yes/No)
+  chatBody.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-confirm]');
+    if (!btn) return;
+
+    const choice = btn.getAttribute('data-confirm');
+    dbg("🟪 [data-confirm] clicked:", choice);
+
+    addMessage(btn.textContent, 'user');
+
+    if (choice === 'yes') {
+      if (!pendingClientData) {
+        console.error("❌ pendingClientData is null during YES confirm. Cannot proceed.");
+        await addMessage("Sorry—your record isn’t available. Let’s proceed manually.", 'bot');
+        setTimeout(() => addOptionsGrid(), 600);
+        return;
+      }
+
+      const stateName = pendingClientData["state"];
+      answers['state'] = stateName;
+      dbg("🟪 State confirmed YES. Using state:", stateName);
+
+      await addMessage(
+        `Awesome. I'll use your state of <strong>${stateName}</strong> to pull relevant info.`,
+        'bot',
+        true
+      );
+
+      await new Promise(r => setTimeout(r, 600));
+
+      const status = pendingClientData["internal title status"];
+      dbg("🟪 Internal title status:", status);
+      await addMessage(
+        `Based on our records regarding your profile, your current title status shows <strong>${status}</strong>.`,
+        'bot',
+        true
+      );
+
+      // → Now the remedy flow
+      await runRemedyFlow(pendingClientData);
+
+    } else {
+      dbg("🟪 State confirm NO. Prompting for state input.");
+      currentQuestionIndex = 2;
+      await addMessage("No worries — let's update your state of residence.", 'bot');
+      setTimeout(() => addStateInput(), 600);
+    }
+  });
+
+  // 2) Handle form Y/N prompt
+  chatBody.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-formconfirm]');
+    if (!btn) return;
+
+    const yn = btn.getAttribute('data-formconfirm');
+    dbg("🟪 [data-formconfirm] clicked:", yn);
+
+    addMessage(btn.textContent, 'user');
+
+    const forms = Array.isArray(window._pendingForms) ? window._pendingForms : [];
+    dbg("🟩 _pendingForms on click:", forms);
+    delete window._pendingForms;
+
+    if (yn === 'yes' && forms.length) {
+      for (const code of forms) {
+        const meta = formLibrary[code];
+        if (!meta) {
+          console.warn("⚠️ Form code in matched list not in formLibrary:", code);
+          continue;
+        }
+        const link = meta.path || meta.url;
+        dbg("🟩 Rendering link for form:", code, "→", link);
+
+        if (link) {
+          await addMessage(
+            `📄 <strong>${meta.label}</strong><br><a href="${link}" target="_blank" style="color:#3b82f6;text-decoration:underline;">Open Form</a>`,
+            'bot',
+            true
+          );
+        }
+      }
+    } else {
+      await addMessage("No problem. We can continue without the forms for now.", 'bot');
+    }
+
+    dbg("🟪 Showing options grid after form Y/N handled.");
+    setTimeout(() => addOptionsGrid(), 800);
+  });
+
+  window._delegatesBound = true;
+  dbg("🟪 Delegated handlers bound.");
         } else {
             addMessage("❌ That code is incorrect. Please try entering the 4-digit code again.", 'bot');
         }
