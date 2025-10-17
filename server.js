@@ -135,7 +135,7 @@ app.post("/chat", async (req, res) => {
     if (matchedForm) {
       const { label, path } = matchedForm.meta;
       return res.json({
-        reply: `📄 You can access the <strong>${label}</strong> here:<br><br><a href="${path}" target="_blank" style="color:#3b82f6;text-decoration:underline;">Open Form</a>`,
+        reply: `📄 <strong>${label}</strong><br><br>👉 <a href="${path}" target="_blank"><strong>Open Form</strong></a>`,
       });
     }
 

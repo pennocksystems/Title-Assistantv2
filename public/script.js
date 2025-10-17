@@ -3,6 +3,17 @@ const chatBody = document.getElementById('chat-body');
 const chatInput = document.getElementById('chat-input');
 const sendBtn = document.getElementById('send-btn');
 
+// --- Allow Enter key to trigger send ---
+chatInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault(); // prevents a newline
+    handleUserResponse(); // triggers same function as send button
+  }
+});
+
+// --- Existing send button listener ---
+sendBtn.addEventListener('click', handleUserResponse);
+
 // --- State ---
 const questions = [
     "What's your Name?",
@@ -616,20 +627,22 @@ function checkForFormDownload(message) {
 }
 
 async function callOpenAI(userMessage) {
-    addMessage("Thinking...", 'bot');
-    try {
-        const res = await fetch('/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userMessage })
-        });
-        const data = await res.json();
-        chatBody.lastChild.remove();
-        addMessage(data.reply || "Sorry, I couldn't get a response.", 'bot');
-    } catch (err) {
-        chatBody.lastChild.remove();
-        addMessage("Error contacting AI service.", 'bot');
-    }
+  addMessage("Thinking...", 'bot');
+  try {
+    const res = await fetch('/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userMessage })
+    });
+    const data = await res.json();
+    chatBody.lastChild.remove();
+
+    // ✅ Render server reply as HTML so <strong> and <a> work
+    addMessage(data.reply || "Sorry, I couldn't get a response.", 'bot', true);
+  } catch (err) {
+    chatBody.lastChild.remove();
+    addMessage("Error contacting AI service.", 'bot');
+  }
 }
 
 // === Dark Mode Toggle ===
