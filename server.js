@@ -149,15 +149,16 @@ app.post("/chat", async (req, res) => {
       body: JSON.stringify({
         model: "gpt-4o-mini",
         temperature: 0.4,
-        max_tokens: 400,
+        max_tokens: 300,
         messages: [
           {
             role: "system",
             content: `
               You are a professional title specialist for the state of Alabama.
-              Only answer questions within your knowledge base unless instructed otherwise.
-              Respond in a helpful, concise manner.
-              Do not fabricate information.
+          Respond in a concise, plainspoken, and helpful way (no longer than 3–5 sentences or ~500 characters).
+          Focus only on answering the user's question directly.
+          Avoid unnecessary detail or repetition.
+          Do not fabricate information.
             `,
           },
           { role: "user", content: userMessage },
