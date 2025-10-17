@@ -166,6 +166,13 @@ app.post("/chat", async (req, res) => {
           
           Integrate mentions gently and only when relevant — never force or repeat them. 
           Do not fabricate information.
+
+          If a user asks about ANYTHING unrelated to vehicle titles, ownership, registration, or these services, 
+          respond exactly with:
+          "I'm here to provide you with real-time information regarding your title questions. Was there something else I could help you with?"
+          
+          Do not attempt to answer or comment on unrelated topics (like celebrities, history, technology, or general knowledge).
+          Keep responses concise (no more than 3–5 sentences) and professional.
             `,
           },
           { role: "user", content: userMessage },
