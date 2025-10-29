@@ -119,13 +119,36 @@ const optionResponses = {
         </li>
     </ul>
 `,
-    "Boats & Alternative Vehicles": `
-        Alabama has different title processes for boats, trailers, ATVs, and other non-standard vehicles:
-        <ul>
-            <li>Boats: No Title Needed - REQUIRED: Bill of Sale & Copy of Registration</li>
-            <li>Motorhome/RVs: Title <em>is required</em> UNLESS it's twenty (20) years older than the Bill of Sale.</li>
-            <li>Trailers: Travel Trailers & Folding/Collapsible Camping Trailers less than twenty (20) years old REQUIRE a Title.</li>
-        </ul>`,
+    "No Title or Missing Title": `
+    Looking for some ways to obtain a duplicate title? Here are some possible remediations to help!
+    <ul>
+        <li>
+            You can apply for a duplicate title directly through the 
+            <strong>Alabama Department of Revenue</strong>:
+            <a href="https://www.revenue.alabama.gov/division/motor-vehicle/"
+               target="_blank"
+               style="color:#3b82f6;text-decoration:underline;">
+               Click Here
+            </a>
+        </li>
+        <li>
+            Fill out your MVT-12-1 Form:
+            <a href="https://www.formalu.com/forms/506/application-for-replacement-title"
+               target="_blank"
+               style="color:#3b82f6;text-decoration:underline;">
+               Click Here
+            </a>
+        </li>
+        <li>
+            For additional Alabama resources, visit the RMV website:
+            <a href="https://www.revenue.alabama.gov/faqs/how-do-i-apply-for-a-replacement-title/"
+               target="_blank"
+               style="color:#3b82f6;text-decoration:underline;">
+               Click Here
+            </a>
+        </li>
+    </ul>
+`,
     "Applying for Salvage/Nonrepairable Titles": `
         Interested in applying for a <em>salvage</em> or <em>nonrepairable</em> title?
         <ul>
