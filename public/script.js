@@ -140,17 +140,32 @@ const optionResponses = {
 
 // --- Chat Start ---
 sendBtn.addEventListener('click', handleUserResponse);
-function showTypingIndicator(callback, delay = 1000) {
-    const typingDiv = document.createElement('div');
-    typingDiv.classList.add('bot-message', 'typing');
-    typingDiv.innerHTML = `<span class="dot"></span><span class="dot"></span><span class="dot"></span>`;
-    chatBody.appendChild(typingDiv);
-    chatBody.scrollTop = chatBody.scrollHeight;
+// --- Typing indicator (singleton-safe) ---
+let activeTypingTimeout = null;
+let activeTypingDiv = null;
 
-    setTimeout(() => {
-        typingDiv.remove();
-        callback();
-    }, delay);
+function showTypingIndicator(callback, delay = 1000) {
+  // If one is already active, remove it first
+  if (activeTypingTimeout) clearTimeout(activeTypingTimeout);
+  if (activeTypingDiv && activeTypingDiv.parentNode) {
+    activeTypingDiv.remove();
+  }
+
+  // Create new typing indicator
+  const typingDiv = document.createElement('div');
+  typingDiv.classList.add('bot-message', 'typing');
+  typingDiv.innerHTML = `<span class="dot"></span><span class="dot"></span><span class="dot"></span>`;
+  chatBody.appendChild(typingDiv);
+  chatBody.scrollTop = chatBody.scrollHeight;
+  activeTypingDiv = typingDiv;
+
+  // Remove it cleanly after delay
+  activeTypingTimeout = setTimeout(() => {
+    if (typingDiv.parentNode) typingDiv.remove();
+    activeTypingTimeout = null;
+    activeTypingDiv = null;
+    if (typeof callback === "function") callback();
+  }, delay);
 }
 
 addMessage("Hey there! I'm <strong>Title Tom</strong>.", 'bot', true);
@@ -190,7 +205,7 @@ function normalizeState(input) {
 }
 
 // --- User Response Handler ---
-function handleUserResponse() {
+async function handleUserResponse() {
     const userText = chatInput.value.trim();
     if (!userText) return;
 
@@ -199,15 +214,25 @@ function handleUserResponse() {
         addMessage(userText, 'user');
         chatInput.value = '';
         if (userText === '0000') {
-            verificationMode = false;
-            const c = pendingClientData;
-            const summary = `✅ It looks like your <strong>${c["vehicle year"]} ${c["vehicle make"]} ${c["vehicle model"]}</strong> is registered in <strong>${c["state"]}</strong>. Is this still accurate?`;
-            addMessage(summary, 'bot', true);
-            // 🔔 call the UI to render the confirm buttons
-showConfirmButtons(c);
+  verificationMode = false;
+  const c = pendingClientData;
+  const summary = `✅ It looks like your <strong>${c["vehicle year"]} ${c["vehicle make"]} ${c["vehicle model"]}</strong> is registered in <strong>${c["state"]}</strong>. Is this still accurate?`;
 
-// ⬇️ STOP keeping logic nested here. Close the current scope if needed.
+  // 🕐 Step 1: Show summary and wait for it to render
+  await addMessage(summary, 'bot', true);
+
+  // 🕐 Step 2: Short delay before showing the Yes/No buttons
+  setTimeout(() => showConfirmButtons(c), 800);
+
+  return;
 }
+
+/* ============================================================
+   🔧 GLOBAL HELPERS + EVENT DELEGATION (with DEBUG LOGS)
+   (Do NOT nest these inside another function)
+============================================================ */
+const DEBUG = true;
+const dbg = (...args) => DEBUG && console.log(...args);
 
 // ✅ Keep this small: only render the buttons.
 function showConfirmButtons(clientData) {
@@ -219,13 +244,6 @@ function showConfirmButtons(clientData) {
     </div>`;
   addMessage(html, 'bot', true);
 }
-
-/* ============================================================
-   🔧 GLOBAL HELPERS + EVENT DELEGATION (with DEBUG LOGS)
-   (Do NOT nest these inside another function)
-============================================================ */
-const DEBUG = true;
-const dbg = (...args) => DEBUG && console.log(...args);
 
 // Run the remedy & form-ask flow
 async function runRemedyFlow(clientData) {
@@ -440,28 +458,39 @@ if (!window._delegatesBound) {
     }
 
     if (currentQuestionIndex === 2) {
-    const stateInput = document.getElementById('state-input');
-    const stateName = (stateInput && stateInput.value.trim()) || chatInput.value.trim();
+  const stateInput = document.getElementById('state-input');
+  const rawInput = stateInput ? stateInput.value.trim() : chatInput.value.trim();
 
-    if (!stateName) {
-        alert('Please enter your state before continuing.');
-        return;
-    }
-
-    const normalizedState = normalizeState(stateName);
-    answers['state'] = normalizedState;
-    if (stateInput) stateInput.parentNode.remove(); // remove the inline input if it's rendered
-    addMessage(stateName, 'user');
-    chatInput.value = '';
-
-    setTimeout(() => {
-    addMessage(`Perfect. I'll pull all the information I can regarding <strong>${normalizedState} Title Information</strong>. Here are some of the routes we can take:`, 'bot', true);
-        setTimeout(() => addOptionsGrid(), 800);
-    }, 1000);
-    currentQuestionIndex++;
+  if (!rawInput) {
+    alert('Please enter your state before continuing.');
     return;
-}
+  }
 
+  const normalizedState = normalizeState(rawInput);
+  answers['state'] = normalizedState;
+
+  // 🔹 Remove inline input if it exists
+  if (stateInput && stateInput.parentNode) stateInput.parentNode.remove();
+
+  // 🔹 Clear the main chat input
+  chatInput.value = '';
+
+  // ✅ Show user message only once (normalized, not raw)
+  addMessage(normalizedState, 'user');
+
+  // ✅ Sequential, smooth bot responses
+  setTimeout(async () => {
+    await addMessage(
+      `Perfect. I'll pull all the information I can regarding <strong>${normalizedState} Title Information</strong>. Here are some of the routes we can take:`,
+      'bot',
+      true
+    );
+    setTimeout(() => addOptionsGrid(), 1000);
+  }, 600);
+
+  currentQuestionIndex++;
+  return;
+}
 
     // --- Default Flow ---
     addMessage(userText, 'user');
@@ -546,12 +575,12 @@ function addStateInput() {
 
 async function addOptionsGrid() {
     const orderedOptions = [
-        "General Information",
+        "How to Sign My Title",
         "Ask Me Anything",
-        "Boats & Alternative Vehicles",
+        "No Title or Missing Title",
+        "How to Get Title for Deceased Owner",
         "Applying for Salvage/Nonrepairable Titles",
-        "Applying for Duplicate Titles",
-        "Alternate Method to Sell Vehicle(s)"
+        "Lien Release"
     ];
 
     const buttonsHTML = `
