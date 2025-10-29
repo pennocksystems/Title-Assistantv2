@@ -89,16 +89,36 @@ function getFormsFromText(remedyText, formLibrary) {
 
 // --- Option Responses ---
 const optionResponses = {
-    "Remedies": `
-        Let's take a look at some <strong>title remedies</strong> within Alabama.<br>
-        Here are some things you can ask me about:
-        <ul>
-            <li>Power of Attorney (POA)</li>
-            <li>Affidavit of Correction (AOC)</li>
-            <li>Lien Releases</li>
-            <li>Title in the Name of a Business or Trust</li>
-            <li>What to do if the Owner of the Vehicle is Deceased</li>
-        </ul>`,
+    "How to Sign My Title": `
+    Signing your <strong>Alabama state title</strong> can be intimidating.<br>
+    Here are some resources that should point you in the right direction:
+    <ul>
+        <li>
+            Car Donation Wizard Title Tips:
+            <a href="https://www.cardonationwizard.com/how-to-sign-your-title/"
+               target="_blank"
+               style="color:#3b82f6;text-decoration:underline;">
+               Click Here
+            </a>
+        </li>
+        <li>
+            Completed Alabama State Title:
+            <a href="https://www.cardonationwizard.com/title/1/alabama-title-transfer.html"
+               target="_blank"
+               style="color:#3b82f6;text-decoration:underline;">
+               Click Here
+            </a>
+        </li>
+        <li>
+            Step by Step Guided Walkthrough (Video):
+            <a href="https://www.youtube.com/watch?v=gYr0UJHN_VQ"
+               target="_blank"
+               style="color:#3b82f6;text-decoration:underline;">
+               Watch Here
+            </a>
+        </li>
+    </ul>
+`,
     "Boats & Alternative Vehicles": `
         Alabama has different title processes for boats, trailers, ATVs, and other non-standard vehicles:
         <ul>
